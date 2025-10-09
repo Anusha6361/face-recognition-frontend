@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 
+// --- FINAL CONFIGURATION ---
+// PASTE YOUR CONFIRMED LIVE RENDER URL HERE:
+const LIVE_API_HOST = "https://face-recognition-backend-live.onrender.com"; 
+// -----------------------------
+
 // Define the expected structure of a recognized face object from the backend
 interface FaceResult {
     name: string;
@@ -85,8 +90,10 @@ export default function Home() {
                 return;
             }
 
-            // 2. Connect WebSocket
-            const socket = new WebSocket("ws://localhost:8000/ws");
+            // 2. Connect WebSocket to the LIVE RENDER URL
+            // FIX: This converts HTTPS (from LIVE_API_HOST) to WSS (Secure WebSocket)
+            const wsUrl = LIVE_API_HOST.replace('https', 'wss') + "/ws";
+            const socket = new WebSocket(wsUrl);
             socketRef.current = socket;
 
             socket.onopen = () => setStatus("WebSocket connected ✅");
@@ -100,10 +107,7 @@ export default function Home() {
                     if (data.faces && Array.isArray(data.faces)) {
                         const facesArray: FaceResult[] = data.faces;
 
-                        // Update the visible list of messages
                         setMessages(facesArray.map(f => `${f.name} (Dist: ${f.distance?.toFixed(3) || 'N/A'})`));
-                        
-                        // Draw bounding boxes
                         drawFaces(facesArray);
                     }
                 } catch (e) {
@@ -158,7 +162,8 @@ export default function Home() {
         formData.append("file", file);
 
         try {
-            const res = await axios.post("http://localhost:8000/upload", formData, {
+            // HTTP POST to the LIVE RENDER URL
+            const res = await axios.post(LIVE_API_HOST + "/upload", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
             alert(`✅ Enrollment Successful for: ${res.data.name}`);
@@ -210,9 +215,9 @@ export default function Home() {
             <div style={{ 
                 display: 'flex',
                 gap: '40px',
-                width: '85%', 
+                width: '85%', // Use percentage for better responsiveness
                 maxWidth: '1200px',
-                backgroundColor: '#1b263b', 
+                backgroundColor: '#1b263b', // Darker base for containers
                 borderRadius: '15px',
                 padding: '30px',
                 boxShadow: '0 10px 30px rgba(0, 0, 0, 0.7)'
@@ -257,7 +262,7 @@ export default function Home() {
                     
                     {/* Enrollment Form Card */}
                     <form onSubmit={handleUpload} style={{ 
-                        backgroundColor: '#2e3a59', 
+                        backgroundColor: '#2e3a59', // Input Card Color
                         padding: '20px',
                         borderRadius: '10px',
                         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
